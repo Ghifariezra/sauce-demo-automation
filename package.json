@@ -1,0 +1,27 @@
+{
+    "name": "sauce-demo-automation",
+    "version": "1.0.0",
+    "main": "index.js",
+    "type": "module",
+    "scripts": {
+        "test:dummy": "mocha tests/google.test.js --timeout 10000",
+        "test:chrome": "mocha tests/sauce-demo/browsers/run-chrome.test.js --timeout 20000 --reporter mochawesome --reporter-options reportDir=reports,reportFilename=chrome-report,html=true,json=false",
+        "test:firefox": "mocha tests/sauce-demo/browsers/run-firefox.test.js --timeout 20000 --reporter mochawesome --reporter-options reportDir=reports,reportFilename=firefox-report,html=true,json=false",
+        "test:edge": "mocha tests/sauce-demo/browsers/run-edge.test.js --timeout 20000 --reporter mochawesome --reporter-options reportDir=reports,reportFilename=edge-report,html=true,json=false",
+        "pretest:parallel": "npx rimraf reports",
+        "test:parallel": "cross-env HEADLESS=true mocha tests/sauce-demo/browsers/run-*.test.js --parallel --timeout 20000 --reporter mochawesome --require mochawesome/register --reporter-options reportDir=reports,reportFilename=compatibility-report,html=true,json=false"
+    },
+    "dependencies": {
+        "canvas": "^3.2.3",
+        "pixelmatch": "^7.2.0",
+        "selenium-webdriver": "^4.46.0"
+    },
+    "devDependencies": {
+        "cross-env": "^10.1.0",
+        "mocha": "^11.7.6",
+        "mocha-simple-html-reporter": "^2.0.0",
+        "mochawesome": "^8.0.1",
+        "mochawesome-merge": "^5.1.1",
+        "mochawesome-report-generator": "^6.3.2"
+    }
+}
