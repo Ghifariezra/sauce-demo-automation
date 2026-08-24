@@ -47,14 +47,13 @@ describe(`[${mode.toUpperCase()} - ${browserName.toUpperCase()}] - [${title}] - 
     afterEach(async function () {
         if (!this.currentTest) return;
 
-        const { state, err, title } = this.currentTest;
+        // const { state, err, title } = this.currentTest;
 
-        const testState = state ? state.toUpperCase() : "PASSED";
-        console.log(`Test "${title}" - ${testState}`);
+        // const testState = state ? state.toUpperCase() : "PASSED";
 
-        if (err) {
-            console.error(`Error: ${err.message}`);
-        }
+        // if (err) {
+        //     console.error(`Error: ${err.message}`);
+        // }
 
         if (loginPage) {
             await loginPage.quitBrowser(mode === "headed" ? 1000 : 0);
