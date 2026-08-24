@@ -5,7 +5,7 @@ import { createInventoryLocators } from "./inventory-locators/inventory.locator.
 import { createInventoryDetailLocators } from "./inventory-locators/inventoryDetail.locator.js";
 import { createCartLocators } from "./cart.locator.js";
 
-export const createLocators = Object.freeze({
+export const SauceDemoLocators = Object.freeze({
     login: createLoginLocators(By),
     sidebar: createSidebarLocators(By),
     inventory: createInventoryLocators(By),
@@ -19,5 +19,8 @@ export const createLocators = Object.freeze({
         menuButton: By.css('#react-burger-menu-btn'),
         title: By.css('span[data-test="title"]'),
         filterDropdown: By.css('select[data-test="product-sort-container"]'),
-    }
+    },
+
+    errorMessage: By.css('h3[data-test="error"]'),
+    errorButton: By.css('button[data-test="error-button"]'),
 });

@@ -4,19 +4,19 @@
     "main": "index.js",
     "type": "module",
     "scripts": {
-        "test:chrome": "mocha tests/compatibility/browsers/chrome.test.js --timeout 20000 --reporter mochawesome --reporter-options reportDir=reports,reportFilename=chrome-report,html=true,json=false",
-        "test:firefox": "mocha tests/compatibility/browsers/firefox.test.js --timeout 20000 --reporter mochawesome --reporter-options reportDir=reports,reportFilename=firefox-report,html=true,json=false",
-        "test:edge": "mocha tests/compatibility/browsers/edge.test.js --timeout 20000 --reporter mochawesome --reporter-options reportDir=reports,reportFilename=edge-report,html=true,json=false",
-        "test:parallel": "cross-env HEADLESS=true mocha tests/compatibility/browsers/ --parallel --timeout 20000 --reporter mochawesome --require mochawesome/register --reporter-options reportDir=reports,reportFilename=compatibility-report,html=true,json=false",
-        "pretest:parallel": "npx rimraf reports"
+        "test:chrome": "cross-env MODE=headed BROWSER=chrome mocha tests/specs/login.spec.js --timeout 20000 --reporter mochawesome --reporter-options reportDir=reports,reportFilename=chrome-report,html=true,json=false",
+        "test:firefox": "cross-env MODE=headed BROWSER=firefox mocha tests/specs/login.spec.js --timeout 20000 --reporter mochawesome --reporter-options reportDir=reports,reportFilename=firefox-report,html=true,json=false",
+        "test:edge": "cross-env MODE=headed BROWSER=MicrosoftEdge mocha tests/specs/login.spec.js --timeout 20000 --reporter mochawesome --reporter-options reportDir=reports,reportFilename=edge-report,html=true,json=false",
+        "pretest:parallel": "npx rimraf reports",
+        "test:parallel": "cross-env MODE=headless mocha tests/compatibility/*.test.js --parallel --timeout 20000 --reporter mochawesome --require mochawesome/register --reporter-options reportDir=reports,reportFilename=compatibility-report,html=true,json=false"
     },
     "dependencies": {
         "canvas": "^3.2.3",
+        "cross-env": "^10.1.0",
         "pixelmatch": "^7.2.0",
         "selenium-webdriver": "^4.46.0"
     },
     "devDependencies": {
-        "cross-env": "^10.1.0",
         "mocha": "^11.7.6",
         "mocha-simple-html-reporter": "^2.0.0",
         "mochawesome": "^8.0.1",

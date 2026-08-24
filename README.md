@@ -13,6 +13,8 @@ This document is prepared as a homework report for login automation on SauceDemo
 
 ## 2) Test Scope
 
+Current execution scope in npm scripts is login-focused (tests/specs/login.spec.js).
+
 ### Positive Test
 
 - Successful login with valid credentials
@@ -35,7 +37,21 @@ This document is prepared as a homework report for login automation on SauceDemo
 ## 4) Project Structure
 
 ```text
-src/
+config/
+	browser.js
+	env.js
+	index.js
+
+data/
+	user.data.js
+	checkout.data.js
+	index.js
+
+tests/
+	compatibility/
+		chrome.test.js
+		firefox.test.js
+		edge.test.js
 	locators/
 		index.js
 		login.locator.js
@@ -46,19 +62,11 @@ src/
 			inventoryDetail.locator.js
 	pages/
 		base.page.js
+		commonPage.js
 		login.page.js
 		inventorys/
 			inventory.page.js
 			inventoryDetail.page.js
-	utilities/
-		visualRegression.js
-
-tests/
-	compatibility/
-		browsers/
-			chrome.test.js
-			firefox.test.js
-			edge.test.js
 	specs/
 		login.spec.js
 		cart.spec.js
@@ -66,17 +74,26 @@ tests/
 			inventory.spec.js
 			inventoryDetail.spec.js
 
+utilities/
+	buildDriver.js
+	visualRegression.js
+
 screenshots/
 	baseline/
 	current/
 	diff/
+
+reports/
+	compatibility-report.html
 ```
 
 ## 5) POM Design
 
-- Locators are centralized in src/locators for cleaner selector management
-- Page actions are separated into src/pages for better readability and reuse
-- Test scenarios are placed in tests/specs, while cross-browser compatibility wrappers are in tests/compatibility
+- Locators are centralized in tests/locators for cleaner selector management.
+- Page actions are separated into tests/pages for better readability and reuse.
+- Test scenarios are placed in tests/specs.
+- Browser-specific compatibility entry points are in tests/compatibility.
+- Runtime settings and browser/env handling are centralized in config and utilities.
 
 Benefits:
 
@@ -131,6 +148,8 @@ npm run test:firefox
 npm run test:edge
 ```
 
+These scripts currently execute login scenarios from tests/specs/login.spec.js.
+
 Run cross-browser tests in parallel (HEADLESS mode enabled):
 
 ```bash
@@ -139,6 +158,9 @@ npm run test:parallel
 
 Notes:
 
+- test:chrome, test:firefox, and test:edge run tests/specs/login.spec.js in headed mode.
+- Browser selection is passed from script env vars (BROWSER=chrome, firefox, MicrosoftEdge).
+- test:parallel runs tests/compatibility/*.test.js with MODE=headless.
 - pretest:parallel automatically removes the reports folder before the parallel run.
 - Mochawesome reports are generated in the reports folder.
 
@@ -154,6 +176,7 @@ Notes:
 - Negative tests for invalid username, wrong password, and locked_out_user are implemented
 - Assertions are present in every test case
 - Visual regression is present in every test case
+- Npm scripts are aligned for login-focused execution across Chrome, Firefox, Edge, and parallel mode
 - Code is pushed to GitHub/GitLab
 - Repository link is submitted to Digital Skola LMS
 
