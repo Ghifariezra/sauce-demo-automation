@@ -1,9 +1,9 @@
-import { describe, before, after, it, afterEach, beforeEach } from "mocha";
+import { describe, it, afterEach, beforeEach } from "mocha";
 import assert from "assert";
 import { ENV } from "../../config/index.js";
 import { CommonPage } from "../pages/commonPage.js";
-import { LoginPage } from "../pages/login.page.js";
-import { buildDriver } from "../../utilities/buildDriver.js";
+import { LoginPage, InventoryPage } from "../pages/index.js";
+import { buildDriver, VisualRegressionHelper } from "../../utilities/index.js";
 
 const title = "Sauce Demo";
 const titleLogin = "Login";
@@ -15,6 +15,8 @@ describe(`[${mode.toUpperCase()} - ${browserName.toUpperCase()}] - [${title}] - 
     let driver;
     let commonPage;
     let loginPage;
+    let inventoryPage;
+    let visualRegressionHelper;
 
     // Data
     const users = ENV.user.users;
@@ -35,10 +37,12 @@ describe(`[${mode.toUpperCase()} - ${browserName.toUpperCase()}] - [${title}] - 
 
         if (mode === "headed") await driver.manage().window().maximize();
 
-        commonPage = new CommonPage(driver);
+        commonPage = new CommonPage(driver, browserName);
+        visualRegressionHelper = new VisualRegressionHelper(browserName);
         loginPage = new LoginPage(driver);
+        inventoryPage = new InventoryPage(driver);
 
-        await loginPage.openBrowser(ENV.baseUrl, ENV.title);
+        await loginPage.openBrowser(ENV.urls.baseUrl, ENV.title);
 
         const currentTitle = await loginPage.getTitleBrowser();
         assert.strictEqual(currentTitle, ENV.title, `Expected title to be "${ENV.title}" but got "${currentTitle}"`);
@@ -49,10 +53,15 @@ describe(`[${mode.toUpperCase()} - ${browserName.toUpperCase()}] - [${title}] - 
 
         // const { state, err, title } = this.currentTest;
 
-        // const testState = state ? state.toUpperCase() : "PASSED";
-
-        // if (err) {
-        //     console.error(`Error: ${err.message}`);
+        // if (state === "failed" && err) {
+        //     console.error(`Test "${title}" failed with error: ${err.message}`);
+        // } else if (state === "passed") {
+        //     const fileName = generateScreenshotName(
+        //         browserName,
+        //         mode,
+        //         title
+        //     );
+        //     await commonPage.fullScreenShot(fileName, browserName);
         // }
 
         if (loginPage) {
@@ -66,6 +75,9 @@ describe(`[${mode.toUpperCase()} - ${browserName.toUpperCase()}] - [${title}] - 
 
         it(`[Regression][${title}] - Should login successfully with "${username}"`, async () => {
             await loginPage.login(username, password);
+
+            const currentUrl = await loginPage.getCurrentUrl(ENV.urls.inventoryUrl);
+            assert.strictEqual(currentUrl, ENV.urls.inventoryUrl, `Expected "${ENV.urls.inventoryUrl}" but got "${currentUrl}"`);
         })
     }
 
@@ -85,8 +97,8 @@ describe(`[${mode.toUpperCase()} - ${browserName.toUpperCase()}] - [${title}] - 
         it(`[Smoke][${title}] - Should login and logout successfully with "${username}"`, async () => {
             await loginPage.login(username, password);
 
-            const currentUrl = await loginPage.getCurrentUrl(ENV.inventoryUrl);
-            assert.strictEqual(currentUrl, ENV.inventoryUrl, `Expected "${ENV.inventoryUrl}" but got "${currentUrl}"`);
+            const currentUrl = await loginPage.getCurrentUrl(ENV.urls.inventoryUrl);
+            assert.strictEqual(currentUrl, ENV.urls.inventoryUrl, `Expected "${ENV.urls.inventoryUrl}" but got "${currentUrl}"`);
 
             const logoutButtonText = await loginPage.getLogoutButtonText();
             assert.strictEqual(logoutButtonText, "Logout", `Expected "Logout" but got "${logoutButtonText}"`);
@@ -95,5 +107,36 @@ describe(`[${mode.toUpperCase()} - ${browserName.toUpperCase()}] - [${title}] - 
         });
     }
 
-    // TODO: Visual Regression Tests
+    // Visual Regression Tests
+    for (const [userType, username] of Object.entries(users)) {
+        if (userType === "locked") continue;
+
+        it(`[Visual Regression][${title}] - Should login with "${username}" and pass visual snapshot check`, async () => {
+            await loginPage.login(username, password);
+
+            const currentUrl = await loginPage.getCurrentUrl(ENV.urls.inventoryUrl);
+            assert.strictEqual(currentUrl, ENV.urls.inventoryUrl, `Expected "${ENV.urls.inventoryUrl}" but got "${currentUrl}"`);
+
+            // By default wait until 5 seconds for all child elements to be loaded and visible
+            await inventoryPage.waitAllElementsVisible();
+
+            const fileName = `Login_Success_${userType}.png`;
+            const sourcePath = await commonPage.fullScreenShot(fileName);
+
+            visualRegressionHelper.saveCurrentScreenshot(sourcePath, fileName);
+            const comparisonResult = await visualRegressionHelper.compareImages(fileName);
+
+            if (!comparisonResult.hasBaseline) {
+                visualRegressionHelper.saveAsBaseline(fileName);
+
+                assert.fail(`No baseline found for ${fileName}. Baseline has been created. Please review the baseline image.`);
+            } else {
+                assert.strictEqual(
+                    comparisonResult.match,
+                    true,
+                    `Visual Regression Mismatch for ${fileName}: ${comparisonResult.message}`
+                )
+            }
+        })
+    }
 });

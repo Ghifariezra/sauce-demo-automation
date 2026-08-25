@@ -12,6 +12,8 @@ export const SauceDemoLocators = Object.freeze({
     inventoryDetail: createInventoryDetailLocators(By),
     cart: createCartLocators(By),
 
+    allChildElements: By.css('*'),
+
     // Header & Navigation global
     header: {
         logo: By.css('.app_logo'),

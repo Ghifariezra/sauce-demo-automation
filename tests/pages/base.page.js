@@ -9,6 +9,7 @@ export class BasePage {
 
     async open(url, title, timeout = this.#TIMEOUT) {
         await this.driver.get(url);
+        await this.waitForPageLoad(timeout);
         await this.driver.wait(until.titleIs(title), timeout);
     }
 
@@ -35,6 +36,42 @@ export class BasePage {
             timeout,
             `Expected URL to be ${expectedUrl}, but it was not.`
         );
+    }
+
+    async waitForPageLoad(timeout = this.#TIMEOUT) {
+        await this.driver.wait(async () => {
+            const readyState = await this.driver.executeScript("return document.readyState");
+            return readyState === "complete";
+        }, timeout, "Page load timed out waiting for readyState complete");
+    }
+
+    async waitUntilAllChildElementsLoaded(parentLocator, childCssSelector = '*', timeout = this.#TIMEOUT) {
+        await this.waitForPageLoad(timeout);
+
+        const parentElement = await this.find(parentLocator, timeout);
+        const children = await parentElement.findElements(childCssSelector);
+
+        for (const child of children) {
+            try {
+                const isDisplayed = await child.isDisplayed();
+                if (isDisplayed) {
+                    await this.driver.wait(until.elementIsVisible(child), timeout);
+                }
+            } catch (error) {
+                // Ignore errors for elements that are not displayed or not found
+            }
+        }
+
+        return children;
+    }
+
+    async waitForImagesLoaded(timeout = this.#TIMEOUT) {
+        await this.driver.wait(async () => {
+            return await this.driver.executeScript(`
+            const images = Array.from(document.querySelectorAll('img'));
+            return images.every(img => img.complete && img.naturalWidth !== 0);
+        `);
+        }, timeout, "Timed out waiting for all images to completely load.");
     }
 
     async getText(locator, timeout = this.#TIMEOUT) {

@@ -5,14 +5,21 @@ import { BasePage } from "./base.page.js";
 export class CommonPage extends BasePage {
     #FOLDER_PATH = "screenshots";
 
-    constructor(driver) {
+    constructor(driver, browserName) {
         super(driver);
+        this.browserName = browserName;
     }
 
     async fullScreenShot(filePath, folderPath = this.#FOLDER_PATH) {
         const pageScreen = await this.driver.takeScreenshot();
 
+        if (this.browserName) {
+            folderPath = path.join(folderPath, this.browserName);
+        }
+
         this.#writeScreenshotToFile(pageScreen, folderPath, filePath);
+
+        return path.join(folderPath, filePath);
     }
 
     async elementScreenshot(element, filePath, folderPath = this.#FOLDER_PATH) {

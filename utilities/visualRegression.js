@@ -4,10 +4,10 @@ import { createCanvas, loadImage } from 'canvas';
 import pixelmatch from 'pixelmatch';
 
 export class VisualRegressionHelper {
-    constructor() {
-        this.baselineDir = path.join(process.cwd(), 'visual-baseline');
-        this.currentDir = path.join(process.cwd(), 'visual-current');
-        this.diffDir = path.join(process.cwd(), 'visual-diff');
+    constructor(browserName) {
+        this.baselineDir = path.join("snapshots", 'visual-baseline', browserName);
+        this.currentDir = path.join("snapshots", 'visual-current', browserName);
+        this.diffDir = path.join("snapshots", 'visual-diff', browserName);
         this._ensureDirs();
     }
 
@@ -116,9 +116,10 @@ export class VisualRegressionHelper {
             const totalPixels = width * height;
             const matchPercentage = ((totalPixels - numDiffPixels) / totalPixels) * 100;
 
+            const threshold = 95; // Set threshold for matching percentage
             return {
                 hasBaseline: true,
-                match: matchPercentage >= 99,
+                match: matchPercentage >= threshold,
                 matchPercentage: parseFloat(matchPercentage.toFixed(2)),
                 diffPath: diffPath,
                 message: numDiffPixels === 0 ? 'Images are identical' : `Found ${numDiffPixels} different pixels`

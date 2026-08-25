@@ -1,29 +1,39 @@
-# Homework QA Automation - SauceDemo Login
+# SauceDemo E2E Automation
 
-This document is prepared as a homework report for login automation on SauceDemo using the Page Object Model (POM), functional assertions in every test case, and visual regression checks.
+End-to-end test automation for https://www.saucedemo.com/, built with Selenium WebDriver and the Page Object Model (POM). The suite covers login flows with functional assertions and visual regression checks, runs across Chrome, Firefox, and Edge, and is set up to grow into inventory and cart coverage next.
 
-## 1) Homework Objectives
+## 1) Project Goals
 
-- Build login automation for https://www.saucedemo.com/
-- Implement POM for maintainable and reusable test code
-- Cover positive and negative login scenarios
-- Add assertions in every test case
-- Add visual regression checks in every test case
-- Prepare the project for GitHub/GitLab submission and LMS upload
+- Automate login (and, going forward, inventory/cart) flows on SauceDemo
+- Keep the codebase maintainable with a clean POM structure (locators / pages / specs)
+- Cover both positive and negative scenarios with explicit functional assertions
+- Catch unintended UI changes with visual regression snapshots on every login scenario
+- Run consistently across Chrome, Firefox, and Edge, headed and headless
 
-## 2) Test Scope
+## 2) Current Test Scope
 
-Current execution scope in npm scripts is login-focused (tests/specs/login.spec.js).
+Active coverage lives in `tests/specs/login.spec.js` and is exercised per-browser through `tests/compatibility/*.test.js`.
 
-### Positive Test
+### Regression
 
-- Successful login with valid credentials
+- Successful login for every non-locked user (`standard`, `problem`, `performance`, `error`, `visual`), asserting redirect to the inventory URL
+- Locked-out user shows the correct error message
+- Empty username, empty password, empty username+password all show the correct error message
+- Invalid credentials show the correct error message
 
-### Negative Tests
+### Smoke
 
-- Invalid username
-- Wrong password
-- locked_out_user
+- Login and logout for every non-locked user, asserting the inventory URL and the "Logout" button text
+
+### Visual Regression
+
+- Login for every non-locked user, wait for the inventory page (wrapper, all child elements, and images) to finish rendering, then compare a full-page screenshot against the stored baseline for that browser
+
+### Planned next
+
+- `tests/specs/inventory/inventory.spec.js` and `inventoryDetail.spec.js` — inventory listing and detail page flows
+- `tests/specs/cart.spec.js` — cart flow
+- Corresponding locators already scaffolded in `tests/locators/inventory-locators/` and `tests/locators/cart.locator.js`; page objects scaffolded in `tests/pages/inventory/`
 
 ## 3) Tech Stack
 
@@ -38,99 +48,109 @@ Current execution scope in npm scripts is login-focused (tests/specs/login.spec.
 
 ```text
 config/
-	browser.js
-	env.js
-	index.js
-
-data/
-	user.data.js
-	checkout.data.js
-	index.js
+    browser.js
+    env.js
+    index.js
 
 tests/
-	compatibility/
-		chrome.test.js
-		firefox.test.js
-		edge.test.js
-	locators/
-		index.js
-		login.locator.js
-		sidebar.locator.js
-		cart.locator.js
-		inventory-locators/
-			inventory.locator.js
-			inventoryDetail.locator.js
-	pages/
-		base.page.js
-		commonPage.js
-		login.page.js
-		inventorys/
-			inventory.page.js
-			inventoryDetail.page.js
-	specs/
-		login.spec.js
-		cart.spec.js
-		inventory/
-			inventory.spec.js
-			inventoryDetail.spec.js
+    compatibility/
+        chrome.test.js
+        firefox.test.js
+        edge.test.js
+    locators/
+        index.js
+        login.locator.js
+        sidebar.locator.js
+        cart.locator.js
+        inventory-locators/
+            inventory.locator.js
+            inventoryDetail.locator.js
+    pages/
+        base.page.js
+        commonPage.js
+        index.js
+        login.page.js
+        inventory/
+            inventory.page.js
+            inventoryDetail.page.js
+    specs/
+        login.spec.js
+        cart.spec.js
+        inventory/
+            inventory.spec.js
+            inventoryDetail.spec.js
 
 utilities/
-	buildDriver.js
-	visualRegression.js
+    buildDriver.js
+    index.js
+    visualRegression.js
 
 screenshots/
-	baseline/
-	current/
-	diff/
+    chrome/
+    firefox/
+    MicrosoftEdge/
+
+snapshots/
+    visual-baseline/
+        chrome/
+        firefox/
+        MicrosoftEdge/
+    visual-current/
+        chrome/
+        firefox/
+        MicrosoftEdge/
+    visual-diff/
+        chrome/
+        firefox/
+        MicrosoftEdge/
 
 reports/
-	compatibility-report.html
+    compatibility-report.html
 ```
+
+`data/` (previously `user.data.js`, `checkout.data.js`, `data/index.js`) has been folded directly into `config/env.js` — user credentials, expected error messages, and checkout data now live under `ENV.user` and `ENV.checkout`, with all URLs grouped under `ENV.urls` (`ENV.urls.baseUrl`, `ENV.urls.inventoryUrl`, `ENV.urls.cartUrl`, `ENV.urls.inventoryDetailUrl(productId)`). One less file to keep in sync, one source of truth for runtime config.
 
 ## 5) POM Design
 
-- Locators are centralized in tests/locators for cleaner selector management.
-- Page actions are separated into tests/pages for better readability and reuse.
-- Test scenarios are placed in tests/specs.
-- Browser-specific compatibility entry points are in tests/compatibility.
-- Runtime settings and browser/env handling are centralized in config and utilities.
+- Locators are centralized in `tests/locators` for cleaner selector management.
+- Page actions live in `tests/pages`, each page object extending a shared `BasePage`.
+- Test scenarios live in `tests/specs`.
+- Browser-specific compatibility entry points live in `tests/compatibility`.
+- Runtime settings, URLs, and test data are centralized in `config/env.js`.
+- `tests/pages/index.js` and `utilities/index.js` are barrel files — pages and utilities are imported from one place (`import { LoginPage, InventoryPage } from "../pages/index.js"`) instead of deep-linking individual files.
 
-Benefits:
+### BasePage helpers
 
-- Reduced code duplication
-- Easier maintenance when selectors change
-- Clear separation between page behavior and test scenarios
+`BasePage` now handles page-readiness beyond simple element waits:
 
-## 6) Test Case Matrix and Assertions
+- `waitForPageLoad(timeout)` — waits for `document.readyState === "complete"`; called automatically inside `open()` before checking the title.
+- `waitUntilAllChildElementsLoaded(parentLocator, childCssSelector, timeout)` — waits for every visible child under a parent element to become visible; used before taking a screenshot so partially-rendered UI doesn't produce a false visual diff.
+- `waitForImagesLoaded(timeout)` — waits for every `<img>` on the page to finish loading (`complete && naturalWidth !== 0`).
 
-| ID | Scenario | Test Data | Expected Result | Main Assertions |
-|---|---|---|---|---|
-| TC-LOGIN-001 | Login success | standard_user / secret_sauce | User is redirected to inventory page | Assert inventory URL, header/title visibility, and product list visibility |
-| TC-LOGIN-002 | Invalid username | invalid_user / secret_sauce | Login fails and error is shown | Assert error message visibility and exact error text |
-| TC-LOGIN-003 | Wrong password | standard_user / wrong_password | Login fails and error is shown | Assert error message visibility and user remains on login page |
-| TC-LOGIN-004 | locked_out_user | locked_out_user / secret_sauce | Login fails due to locked account | Assert locked-out error message text |
+`InventoryPage.waitAllElementsVisible()` chains these three checks against the inventory page wrapper before a screenshot is taken.
 
-Note:
+### CommonPage
 
-- Every test case should include at least one functional assertion and one visual regression assertion.
+`CommonPage` now takes a `browserName` in its constructor and writes screenshots into `screenshots/<browserName>/`, returning the saved file path so callers (like the visual regression check) don't have to reconstruct it.
 
-## 7) Visual Regression Workflow
+## 6) Visual Regression Workflow
 
-Each scenario follows this flow:
+Each visual regression scenario follows this flow:
 
-1. Capture the latest screenshot as current.
-2. Check whether a baseline screenshot already exists.
-3. If no baseline exists, save current as the first baseline.
-4. If baseline exists, compare baseline vs current using pixelmatch.
-5. Save the diff image and assert the match threshold (for example, >= 99%).
+1. Log in and wait for the inventory page to fully render (wrapper → child elements → images).
+2. Capture a full-page screenshot via `CommonPage.fullScreenShot()`, saved to `screenshots/<browser>/`.
+3. Feed that screenshot to `VisualRegressionHelper` (constructed per-browser) as the "current" image.
+4. If no baseline exists yet for that browser, save the current screenshot as the baseline and fail the test on purpose so the new baseline gets reviewed.
+5. If a baseline exists, compare it against the current screenshot with pixelmatch, save the diff image, and assert the match percentage is **>= 95%**.
 
-Generated artifacts:
+Generated artifacts, organized per browser:
 
-- baseline: accepted reference image
-- current: latest test run image
-- diff: highlighted visual differences
+- `screenshots/<browser>/` — raw screenshots captured during the run
+- `snapshots/visual-baseline/<browser>/` — accepted reference images
+- `snapshots/visual-current/<browser>/` — latest run images
+- `snapshots/visual-diff/<browser>/` — highlighted visual differences
 
-## 8) How to Run
+## 7) How to Run
 
 ### Install Dependencies
 
@@ -140,17 +160,15 @@ npm install
 
 ### Run Test Suites
 
-Run tests using the npm scripts from package.json:
-
 ```bash
 npm run test:chrome
 npm run test:firefox
 npm run test:edge
 ```
 
-These scripts currently execute login scenarios from tests/specs/login.spec.js.
+These scripts run `tests/specs/login.spec.js` in headed mode for the given browser (`BROWSER=chrome|firefox|MicrosoftEdge`), covering Regression, Smoke, and Visual Regression together.
 
-Run cross-browser tests in parallel (HEADLESS mode enabled):
+Run all three browsers in parallel, headless:
 
 ```bash
 npm run test:parallel
@@ -158,37 +176,32 @@ npm run test:parallel
 
 Notes:
 
-- test:chrome, test:firefox, and test:edge run tests/specs/login.spec.js in headed mode.
-- Browser selection is passed from script env vars (BROWSER=chrome, firefox, MicrosoftEdge).
-- test:parallel runs tests/compatibility/*.test.js with MODE=headless.
-- pretest:parallel automatically removes the reports folder before the parallel run.
-- Mochawesome reports are generated in the reports folder.
+- `test:parallel` runs `tests/compatibility/*.test.js` with `MODE=headless`.
+- `pretest:parallel` clears the `reports` folder before each parallel run.
+- Mochawesome HTML reports land in `reports/`.
 
-### First Baseline Setup
+### First Baseline Run
 
-- Run the scenarios once to generate the initial baseline images.
-- On the next run, the framework will compare current images against baseline images.
+The first time a browser runs the Visual Regression suite, there's no baseline yet — the test saves the current screenshot as the baseline and fails intentionally so it gets reviewed. Re-run after reviewing to confirm it now passes against that baseline.
 
-## 9) Homework Submission Checklist
+## 8) Current Status
 
-- Login automation on SauceDemo is implemented
-- Positive login test is implemented
-- Negative tests for invalid username, wrong password, and locked_out_user are implemented
-- Assertions are present in every test case
-- Visual regression is present in every test case
-- Npm scripts are aligned for login-focused execution across Chrome, Firefox, Edge, and parallel mode
-- Code is pushed to GitHub/GitLab
-- Repository link is submitted to Digital Skola LMS
+**Done**
 
-<!-- ## 10) Suggested Commit Messages
+- Login POM (locators, page object, spec) for Regression, Smoke, and Visual Regression
+- Cross-browser runs (Chrome, Firefox, Edge), headed and headless
+- Per-browser visual regression pipeline with baseline/current/diff snapshots and a 95% match threshold
+- Config consolidated into `config/env.js`; barrel exports for pages and utilities
 
-- feat: add POM structure for login and inventory pages
-- test: add positive login success scenario with assertions
-- test: add negative login scenarios (invalid username, wrong password, locked_out_user)
-- test: add visual regression helper and screenshot comparison
-- docs: update homework README in English
+**In progress / next up**
 
-## 11) Reviewer Notes
+- Inventory spec (`inventory.spec.js`, `inventoryDetail.spec.js`) — locators and page objects already scaffolded, specs not yet written
+- Cart spec (`cart.spec.js`) — locator scaffolded, spec not yet written
+- Extend `waitAllElementsVisible`-style readiness checks to the inventory/cart pages once those specs exist
 
-- Main evaluation points are locator stability, assertion quality, and visual baseline consistency.
-- If the UI changes, baseline images should be updated to keep visual checks relevant. -->
+## 9) Development Notes
+
+- Keep locators centralized — if SauceDemo markup changes, the fix should only touch `tests/locators`.
+- When the UI legitimately changes, delete the stale image under `snapshots/visual-baseline/<browser>/` and re-run so the suite regenerates it, rather than editing the PNG by hand.
+- The 95% match threshold is intentionally tolerant of minor rendering noise (font anti-aliasing, animation timing) across headless runs; tighten it if flakiness proves to be a bigger risk than false negatives.
+- Every new spec should follow the existing pattern: assertion(s) tied to the scenario, plus a Visual Regression case where a rendered page is involved.

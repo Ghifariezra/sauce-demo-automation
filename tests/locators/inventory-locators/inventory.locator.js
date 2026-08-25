@@ -1,4 +1,5 @@
 export const createInventoryLocators = (By) => Object.freeze({
+    pageWrapper: By.css('div[id="page_wrapper"]'),
     inventoryList: By.css('div[data-test="inventory-list"]'),
     inventoryItem: By.css('div[data-test="inventory-item"]'),
     productName: By.css('div[data-test="inventory-item-name"]'),
